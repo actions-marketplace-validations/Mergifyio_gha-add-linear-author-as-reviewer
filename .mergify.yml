@@ -1,20 +1,20 @@
 extends: .github
 shared:
   DefaultQueueOptions: &DefaultQueueOptions
-    commit_message_template: |
-      {{ title }} (#{{ number }})
-
-      {{ body }}
-    allow_inplace_checks: true
+    commit_message_format:
+      title: pr-title
+      body: pr-body
     merge_method: squash
+  DefaultReviewCond: &DefaultReviewCond
+    - "#approved-reviews-by>=1"
+    - author=dependabot[bot]
+    - author=mergify-ci-bot
 queue_rules:
   - name: default
     <<: *DefaultQueueOptions
     queue_conditions:
-      - "#approved-reviews-by>=1"
-      - "#changes-requested-reviews-by=0"
-      - "#review-threads-unresolved=0"
-      - "#review-requested=0"
+      - base=main
+      - -author=dependabot[bot]
     merge_conditions: []
 
   - name: lowprio
@@ -22,12 +22,11 @@ queue_rules:
     queue_conditions:
       - "#commits=1"
       - author=dependabot[bot]
-    merge_method: merge
+    merge_method: fast-forward
     merge_conditions: []
     batch_size: 7
     batch_max_wait_time: 5min
-    commit_message_template:
-    queue_branch_merge_method: fast-forward
+    commit_message_format:
 pull_request_rules:
   - name: automatic merge
     conditions:
@@ -50,5 +49,15 @@ pull_request_rules:
         teams:
           - devs
 
+merge_protections:
+  - name: 👀 Review Requirements
+    if: []
+    success_conditions:
+      - or: *DefaultReviewCond
+
 merge_queue:
   max_parallel_checks: 5
+
+merge_protections_settings:
+  reporting_method: deployments
+  auto_merge_conditions: true
